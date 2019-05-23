@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -8,6 +9,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.security.SignatureException;
+import java.util.Arrays;
+import java.util.List;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.openpgp.PGPException;
@@ -28,6 +31,7 @@ public class TestBCOpenPGP {
 	private String privKeyFile = "C:\\git_code\\private_key";
 
 	private String plainTextFile = "C:\\git_code\\test_encryption.txt"; //create a text file to be encripted, before run the tests
+	private String multiplePlainTextFile = "C:\\git_code\\testencryptfolder\\test1.txt";
 	private String cipherTextFile = "C:\\git_code\\test_encrypted";
 	private String decPlainTextFile = "C:\\git_code\\test_decrypted";
 	//private String signatureFile = "/tmp/signature.txt";
@@ -68,6 +72,43 @@ public class TestBCOpenPGP {
 	}
 
 	@Test
+	public void encryptMultipleFiles() throws NoSuchProviderException, IOException, PGPException{
+		List<String> result = Arrays.asList(multiplePlainTextFile.split("\\s*,\\s*"));
+		for (int i = 0; i < result.size(); i++) {
+			FileInputStream pubKeyIs = new FileInputStream(pubKeyFile);
+			FileOutputStream cipheredFileIs = new FileOutputStream(result.get(i)+"ENCRYPTED");
+			PgpHelper.getInstance().encryptFile(cipheredFileIs, result.get(i), PgpHelper.getInstance().readPublicKey(pubKeyIs), isArmored, integrityCheck);
+			cipheredFileIs.close();
+			pubKeyIs.close();
+		}
+		//FileOutputStream cipheredFileIs = new FileOutputStream(cipherTextFile);
+	}
+
+	@Test
+	public void encryptFolder() throws NoSuchProviderException, IOException, PGPException{
+
+		String cipherDirectory = "C:\\git_code\\testencryptfolder";
+		String cipherOutputDir = "C:\\git_code\\testencryptoutputfolder";
+		File folder = new File(cipherDirectory);
+		File[] listOfFiles = folder.listFiles();
+
+		for (File file : listOfFiles) {
+			FileInputStream pubKeyIs = new FileInputStream(pubKeyFile);
+			String FileName=file.getName();
+			FileOutputStream fos= new FileOutputStream(cipherOutputDir+"/"+FileName+"_encrypte.csv");
+			PgpHelper.getInstance().encryptFile(fos, cipherDirectory+"/"+FileName, PgpHelper.getInstance().readPublicKey(pubKeyIs), isArmored, integrityCheck);
+			fos.close();
+			pubKeyIs.close();
+		}
+
+		//pubKeyIs.close();
+		//FileOutputStream cipheredFileIs = new FileOutputStream(cipherTextFile);
+		//PgpHelper.getInstance().encryptFile(cipheredFileIs, plainTextFile, PgpHelper.getInstance().readPublicKey(pubKeyIs), isArmored, integrityCheck);
+
+
+	}
+
+	/**@Test
 	public void decrypt() throws Exception{
 
 		FileInputStream cipheredFileIs = new FileInputStream(cipherTextFile);

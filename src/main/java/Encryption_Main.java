@@ -1,8 +1,11 @@
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.security.*;
+import java.util.Arrays;
+import java.util.List;
 
 public class Encryption_Main {
     static Integer gen_key_pair = Integer.valueOf(System.getProperty("GEN_KEY_PAIR"));
@@ -45,15 +48,43 @@ public class Encryption_Main {
             String pubKeyFile = System.getProperty("EXISTPUBKEYFILE");
             String cipherTextFile = System.getProperty("CIPHEREDFILEOUTPUT");
             String originalFile = System.getProperty("ORIGINALFILEINPUT");
+            String cipherDirectory = System.getProperty("CIPHERDIR");
+            String cipherOutputDir = System.getProperty("CIPHEROUTPUTDIR");
             boolean integrityCheck=true;
             boolean isArmored = false;
 
-            FileInputStream pubKeyIs = new FileInputStream(pubKeyFile);
-            FileOutputStream cipheredFileIs = new FileOutputStream(cipherTextFile);
-            PgpHelper.getInstance().encryptFile(cipheredFileIs, originalFile, PgpHelper.getInstance().readPublicKey(pubKeyIs), isArmored, integrityCheck);
-            cipheredFileIs.close();
-            pubKeyIs.close();
-            System.out.println("File encrypted successfully!!! The file is created as "+cipherTextFile+"... Please verify...");
+            if (cipherDirectory==null){
+                List<String> result = Arrays.asList(originalFile.split("\\s*,\\s*"));
+
+                for (int i = 0; i < result.size(); i++) {
+                    FileInputStream pubKeyIs = new FileInputStream(pubKeyFile);
+                    int lastDot = result.get(i).lastIndexOf('.');
+                    String encrypt_file = result.get(i).substring(0,lastDot) + "ENCRYPT" + result.get(i).substring(lastDot);
+                    FileOutputStream cipheredFileIs = new FileOutputStream(encrypt_file);
+                    PgpHelper.getInstance().encryptFile(cipheredFileIs, result.get(i), PgpHelper.getInstance().readPublicKey(pubKeyIs), isArmored, integrityCheck);
+                    cipheredFileIs.close();
+                    pubKeyIs.close();
+                    System.out.println("File encrypted successfully!!! The file is created as "+encrypt_file+"... Please verify...");
+                }
+                }
+                //PgpHelper.getInstance().encryptFile(cipheredFileIs, originalFile, PgpHelper.getInstance().readPublicKey(pubKeyIs), isArmored, integrityCheck);
+                //cipheredFileIs.close();
+                //pubKeyIs.close();
+
+            else{
+
+                File folder = new File(cipherDirectory);
+                File[] listOfFiles = folder.listFiles();
+
+                for (File file : listOfFiles) {
+                    FileInputStream pubKeyIs = new FileInputStream(pubKeyFile);
+                    String FileName=file.getName();
+                    FileOutputStream fos = new FileOutputStream(cipherOutputDir+"/"+FileName+"_encrypte.csv");
+                    PgpHelper.getInstance().encryptFile(fos, cipherDirectory+"/"+FileName, PgpHelper.getInstance().readPublicKey(pubKeyIs), isArmored, integrityCheck);
+                    fos.close();
+                    pubKeyIs.close();
+                }
+            }
         }
         else {
             System.out.println("Encryption is not needed.");
