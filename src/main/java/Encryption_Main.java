@@ -1,113 +1,108 @@
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
+
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.security.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.bouncycastle.openpgp.PGPPublicKey;
 
 public class Encryption_Main {
-    static Integer gen_key_pair = Integer.valueOf(System.getProperty("GEN_KEY_PAIR"));
-    static Integer encrypt = Integer.valueOf(System.getProperty("ENCRYPTION"));
-    static Integer decrypt = Integer.valueOf(System.getProperty("DECRYPTION"));
 
     public static void main(String[] args) throws Exception {
-        if (gen_key_pair == null)
-        {gen_key_pair=0;}
 
-        if (encrypt == null)
-        {encrypt=0;}
+        Integer gen_key_pair = Integer.valueOf(System.getProperty("GEN_KEY_PAIR"));
+        Integer encrypt = Integer.valueOf(System.getProperty("ENCRYPTION"));
+        Integer decrypt = Integer.valueOf(System.getProperty("DECRYPTION"));
 
-        if (decrypt == null)
-        {decrypt=0;}
+        Encryption_Main em = new Encryption_Main();
+
+        if (gen_key_pair == null) {
+            gen_key_pair = 0;
+        }
+
+        if (encrypt == null) {
+            encrypt = 0;
+        }
+
+        if (decrypt == null) {
+            decrypt = 0;
+        }
 
         System.out.println("Program starting shortly...");
-        if (gen_key_pair==1){
+        if (gen_key_pair == 1) {
+            String privateKeyPath = System.getProperty("GEN_PRIV_KEY");
+            String publicKeyPath = System.getProperty("GEN_PUB_KEY");
             String id = System.getProperty("ID");
             String passwd = System.getProperty("PWD");
-            boolean isArmored = true;
-            RSAKeyPairGenerator rkpg = new RSAKeyPairGenerator();
-            Security.addProvider(new BouncyCastleProvider());
-            KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA", "BC");
-            kpg.initialize(1024);
-            KeyPair kp = kpg.generateKeyPair();
-
-            FileOutputStream out1 = new FileOutputStream(System.getProperty("GEN_PRIV_KEY"));
-            FileOutputStream out2 = new FileOutputStream(System.getProperty("GEN_PUB_KEY"));
-            if (id == null){id="default";}
-            if (passwd == null){passwd="default";}
-            rkpg.exportKeyPair(out1, out2, kp.getPublic(), kp.getPrivate(), id, passwd.toCharArray(), isArmored);
-            System.out.println("Key pairs created successfully!!!");
-        }
-        else {
-            System.out.println("Key pair generation is not needed.");
+            em.genKeyPair(privateKeyPath, publicKeyPath, id, passwd);
         }
 
-        if (encrypt==1){
+        if (encrypt == 1) {
             String pubKeyFile = System.getProperty("EXISTPUBKEYFILE");
             String cipherTextFile = System.getProperty("CIPHEREDFILEOUTPUT");
             String originalFile = System.getProperty("ORIGINALFILEINPUT");
             String cipherDirectory = System.getProperty("CIPHERDIR");
             String cipherOutputDir = System.getProperty("CIPHEROUTPUTDIR");
-            boolean integrityCheck=true;
+            boolean integrityCheck = true;
             boolean isArmored = false;
 
-            if (cipherDirectory==null){
-                List<String> result = Arrays.asList(originalFile.split("\\s*,\\s*"));
-
-                for (int i = 0; i < result.size(); i++) {
-                    FileInputStream pubKeyIs = new FileInputStream(pubKeyFile);
-                    int lastDot = result.get(i).lastIndexOf('.');
-                    String encrypt_file = result.get(i).substring(0,lastDot) + "ENCRYPT" + result.get(i).substring(lastDot);
-                    FileOutputStream cipheredFileIs = new FileOutputStream(encrypt_file);
-                    PgpHelper.getInstance().encryptFile(cipheredFileIs, result.get(i), PgpHelper.getInstance().readPublicKey(pubKeyIs), isArmored, integrityCheck);
-                    cipheredFileIs.close();
-                    pubKeyIs.close();
-                    System.out.println("File encrypted successfully!!! The file is created as "+encrypt_file+"... Please verify...");
-                }
-                }
-                //PgpHelper.getInstance().encryptFile(cipheredFileIs, originalFile, PgpHelper.getInstance().readPublicKey(pubKeyIs), isArmored, integrityCheck);
-                //cipheredFileIs.close();
-                //pubKeyIs.close();
-
-            else{
-
-                File folder = new File(cipherDirectory);
-                File[] listOfFiles = folder.listFiles();
-
-                for (File file : listOfFiles) {
-                    FileInputStream pubKeyIs = new FileInputStream(pubKeyFile);
-                    String FileName=file.getName();
-                    FileOutputStream fos = new FileOutputStream(cipherOutputDir+"/"+FileName+"_encrypte.csv");
-                    PgpHelper.getInstance().encryptFile(fos, cipherDirectory+"/"+FileName, PgpHelper.getInstance().readPublicKey(pubKeyIs), isArmored, integrityCheck);
-                    fos.close();
-                    pubKeyIs.close();
-                }
+            if (cipherDirectory == null) {
+                em.encryptFiles(originalFile, "ENCRYPT", pubKeyFile, isArmored, integrityCheck);
+            } else {
+                em.encryptFolder(cipherOutputDir, cipherDirectory, "_encrypte.csv", pubKeyFile, isArmored, integrityCheck);
             }
         }
-        else {
-            System.out.println("Encryption is not needed.");
-        }
 
-        if (decrypt==1){
+        if (decrypt == 1) {
             String cipherTextFile = System.getProperty("CIPHEREDFILEINPUT");
             String privKeyFile = System.getProperty("PRIVATEKEYFILE");
             String decPlainTextFile = System.getProperty("DECRYPTEDFILEOUTPUT");
             String passwd = System.getProperty("PWD");
-
-            FileInputStream cipheredFileIs = new FileInputStream(cipherTextFile);
-            FileInputStream privKeyIn = new FileInputStream(privKeyFile);
-            FileOutputStream plainTextFileIs = new FileOutputStream(decPlainTextFile);
-            PgpHelper.getInstance().decryptFile(cipheredFileIs, plainTextFileIs, privKeyIn, passwd.toCharArray());
-            cipheredFileIs.close();
-            plainTextFileIs.close();
-            privKeyIn.close();
-            System.out.println("File decrypted successfully!!! The file is created as "+decPlainTextFile+"... Please verify...");
+            em.decrypt(cipherTextFile, decPlainTextFile, privKeyFile, passwd);
         }
-        else {System.out.println("Decryption is not needed.");
-        }
+    }
 
-        System.out.println("Program finished successfully!!!!!");
+    public void genKeyPair(String privateKeyPath, String publicKeyPath, String id, String passwd) {
+        if (id == null) {
+            id = "default";
+        }
+        if (passwd == null) {
+            passwd = "default";
+        }
+        RSAKeyPairGenerator rkpg = new RSAKeyPairGenerator();
+        rkpg.generateAndExportKeys("RSA", "BC", 1024, id, passwd.toCharArray(), privateKeyPath, publicKeyPath, true);
+    }
+
+    public void encryptFile(String outFileName, String inFileName, String pubKeyFile, boolean armored, boolean integrityCheck) {
+        PGPPublicKey pubKey = PgpHelper.getInstance().readPublicKey(pubKeyFile);
+        PgpHelper.getInstance().encryptFile(outFileName, inFileName, pubKey, armored, integrityCheck);
+    }
+
+    public List<String> encryptFiles(String inFileNames, String suffix, String pubKeyFile, boolean armored, boolean integrityCheck) {
+        List<String> inputs = Arrays.asList(inFileNames.split("\\s*,\\s*"));
+        List<String> newFiles = new ArrayList<>();
+        for (String fp : inputs) {
+            String encrypted_filePath = fp + suffix;
+            if (fp.lastIndexOf('.') != -1) {
+                int lastDot = fp.lastIndexOf('.');
+                encrypted_filePath = fp.substring(0, lastDot) + suffix + fp.substring(lastDot);
+            }
+            newFiles.add(encrypted_filePath);
+            this.encryptFile(encrypted_filePath, fp, pubKeyFile, armored, integrityCheck);
+        }
+        return newFiles;
+    }
+
+    public void encryptFolder(String outDir, String inDir, String suffix, String pubKeyFile, boolean armored, boolean integrityCheck) {
+        File folder = new File(inDir);
+        File[] listOfFiles = folder.listFiles();
+        for (File file : listOfFiles) {
+            String fileName = outDir + "\\" + file.getName() + suffix;
+            this.encryptFile(fileName, file.getAbsoluteFile().toString(), pubKeyFile, armored, integrityCheck);
+        }
+    }
+
+    public void decrypt(String inFileName, String outFileName, String privKeyFileName, String passwd) {
+        PgpHelper.getInstance().decryptFile(inFileName, outFileName, privKeyFileName, passwd.toCharArray());
     }
 }
