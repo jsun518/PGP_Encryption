@@ -220,6 +220,7 @@ public class PgpHelper {
             JcePublicKeyKeyEncryptionMethodGenerator d = (new JcePublicKeyKeyEncryptionMethodGenerator(encKey)).setProvider(new BouncyCastleProvider()).setSecureRandom(new SecureRandom());
             cPk.addMethod(d);
             byte[] bytes = bOut.toByteArray();
+            //out.close();
             
             try (OutputStream cOut = cPk.open((OutputStream) out, (long) bytes.length)) {
                 cOut.write(bytes);

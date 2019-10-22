@@ -13,7 +13,6 @@ import org.bouncycastle.openpgp.operator.jcajce.JcaPGPKeyConverter;
 import org.bouncycastle.openpgp.operator.jcajce.JcePBESecretKeyEncryptorBuilder;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.security.*;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.util.Date;
